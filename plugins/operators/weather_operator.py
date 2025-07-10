@@ -25,8 +25,12 @@ class WeatherOperator(BaseOperator):
                 self.log.error(error_message)
                 raise ValueError(error_message)
 
-            self.log.info(f"Current temperature in {self.city_name}: {temperature}°C")
-            return temperature  # Return the temperature for downstream tasks if needed
+            msg = f"Current temperature in {self.city_name}: {temperature}°C"
+            self.log.info(msg)
+
+            # Push temperature to XCom for downstream tasks
+            context['ti'].xcom_push(key='temperature_msg', value=msg)
+            self.log.info("temperature_msg pushed to XCom.")
 
         except Exception as e:
             error_message = f"An error occurred while fetching weather data for {self.city_name}: {e}"

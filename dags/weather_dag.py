@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 from operators.weather_operator import WeatherOperator
+from operators.send_discord_operator import SendDiscordOperator
 
 default_args = {
     'owner': 'airflow',
@@ -33,8 +34,13 @@ with DAG(
         lon=121.5319  # 台北市經度
     )
 
+    send_discord_task = SendDiscordOperator(
+        task_id='send_discord_task',
+        webhook_variable_key="discord_webhook_url"
+    )
+
     weather_end_task = DummyOperator(
         task_id='weather_end_task'
     )
 
-    weather_start_task >> log_weather_task >> weather_end_task
+    weather_start_task >> log_weather_task >> send_discord_task >> weather_end_task
