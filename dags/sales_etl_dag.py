@@ -3,6 +3,7 @@ from airflow import DAG
 from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 from operators.check_sales_table_operator import CheckSalesTableOperator
+from operators.generate_fake_sales_data_operator import GenerateFakeSalesDataOperator
 
 default_args = {
     'owner': 'airflow',
@@ -31,9 +32,14 @@ with DAG(
         conn_id='postgresql'
     )
 
+    generate_fake_sales_data = GenerateFakeSalesDataOperator(
+        task_id='generate_fake_sales_data',
+        num_records=100
+    )
+
 
     sales_etl_end = DummyOperator(
         task_id='sales_etl_end'
     )
 
-    sales_etl_start >> check_and_create_table >> sales_etl_end
+    sales_etl_start >> check_and_create_table >> generate_fake_sales_data >> sales_etl_end

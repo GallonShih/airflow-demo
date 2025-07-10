@@ -25,7 +25,11 @@ class CheckSalesTableOperator(BaseOperator):
             product VARCHAR(255) NOT NULL,
             quantity INT NOT NULL,
             total_amount NUMERIC NOT NULL,
-            transaction_time TIMESTAMP NOT NULL
+            transaction_time TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
         );
         """)
         self.log.info(f"Table {self.schema_name}.{self.table_name} checked/created.")
+    
+        # Push connection ID to XCom
+        context['ti'].xcom_push(key='pg_conn_id', value=self.conn_id)
+        self.log.info("Postgres connection ID pushed to XCom.")
