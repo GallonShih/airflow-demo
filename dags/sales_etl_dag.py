@@ -20,6 +20,7 @@ with DAG(
     schedule_interval='@hourly',  # 每小時執行一次
     start_date=datetime(2025, 1, 1),
     catchup=False,
+    tags=["etl", "sales"],
 ) as dag:
 
     sales_etl_start = DummyOperator(
