@@ -8,6 +8,18 @@ def initialize_number(**context):
     context['ti'].xcom_push(key='number', value=initial_number)
     print(f"Initialized number: {initial_number}")
 
+# 最後僅呈現數值
+def finalize_number(**context):
+    # 自動偵測上游的 tasks
+    upstream_task_ids = context['task'].upstream_task_ids
+    numbers = [context['ti'].xcom_pull(task_ids=task_id, key='number') for task_id in upstream_task_ids]
+
+    if None in numbers:
+        raise ValueError("Number not found in XCom for one or more upstream tasks.")
+
+    final_number = sum(numbers)
+    print(f"Final number after all increments: {final_number}")
+
 # 加 1 的函數
 def increment_number(**context):
     # 自動偵測上游的 tasks
@@ -22,9 +34,23 @@ def increment_number(**context):
     context['ti'].xcom_push(key='number', value=incremented_number)
     print(f"Incremented number: {incremented_number}")
 
+# 乘 2 的函數
+def multiply_number(**context):
+    # 自動偵測上游的 tasks
+    upstream_task_ids = context['task'].upstream_task_ids
+    numbers = [context['ti'].xcom_pull(task_ids=task_id, key='number') for task_id in upstream_task_ids]
+
+    if None in numbers:
+        raise ValueError("Number not found in XCom for one or more upstream tasks.")
+
+    number = sum(numbers)
+    multiplied_number = number * 2
+    context['ti'].xcom_push(key='number', value=multiplied_number)
+    print(f"Multiplied number: {multiplied_number}")
+
 # DAG 定義
 with DAG(
-    dag_id='increment_number_dag',
+    dag_id='math_number_dag',
     start_date=datetime(2025, 1, 1),
     schedule_interval=None,  # 手動觸發
     catchup=False,
@@ -35,6 +61,12 @@ with DAG(
     initialize_task = PythonOperator(
         task_id='initialize_task',
         python_callable=initialize_number,
+    )
+
+    # 最終呈現數值的 Task
+    finalize_task = PythonOperator(
+        task_id='finalize_task',
+        python_callable=finalize_number,
     )
 
     # 加 1 的 Task
@@ -58,7 +90,15 @@ with DAG(
         python_callable=increment_number,
     )
 
+    # 乘 2 的 Task
+    multiply_task_01 = PythonOperator(
+        task_id='multiply_task_01',
+        python_callable=multiply_number,
+    )
+
     # DAG 的依賴關係
     initialize_task >> [increment_task_01, increment_task_02]
     increment_task_02 >> increment_task_03
     [increment_task_01, increment_task_03] >> increment_task_04
+    increment_task_04 >> multiply_task_01
+    multiply_task_01 >> finalize_task

@@ -6,7 +6,8 @@ class SendDiscordOperator(BaseOperator):
     def __init__(self, webhook_variable_key="discord_webhook_url", **kwargs):
         super().__init__(**kwargs)
         self.webhook_variable_key = webhook_variable_key
-        self.webhook_url=Variable.get(self.webhook_variable_key)
+        self.webhook_url = Variable.get(self.webhook_variable_key, default_var="")
+        self.custom_msg = Variable.get("custom_message", default_var="")
 
     def execute(self, context):
         # Pull connection ID from XCom
@@ -14,9 +15,7 @@ class SendDiscordOperator(BaseOperator):
         if not temperature_msg:
             raise ValueError("Temperature message not found in XCom. Ensure the WeatherOperator task has run successfully.")
 
-        custom_msg = Variable.get("custom_message", default_var="")
-
-        discord_msg = f"{custom_msg}\n{temperature_msg}" if custom_msg else temperature_msg
+        discord_msg = f"{self.custom_msg}\n{temperature_msg}" if self.custom_msg else temperature_msg
         self.log.info(f"Sending temperature message to Discord: {discord_msg}")
         payload = {"content": discord_msg}
         try:
