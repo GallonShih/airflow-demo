@@ -1,26 +1,34 @@
 #!/bin/bash
 
-# 設定密碼（可自行修改）
+# 設定登入密碼
 PASSWORD="airflow"
 
-echo "🔧 安裝 code-server ..."
-curl -fsSL https://code-server.dev/install.sh | sh
+# 設定 code-server 映射的 port（外部可連線）
+PORT=8081
 
-echo "🔐 設定登入密碼 ..."
+# 建立 code-server 的設定資料夾
 mkdir -p ~/.config/code-server
+
+# 建立 config.yaml 檔案
 cat <<EOF > ~/.config/code-server/config.yaml
-bind-addr: 0.0.0.0:8081
+bind-addr: 0.0.0.0:8080
 auth: password
 password: $PASSWORD
 cert: false
 EOF
 
-echo "🎯 設定開機自動啟動（使用 systemd）..."
-sudo systemctl enable --now code-server@$USER
+echo "🚀 啟動 code-server Docker 容器 ..."
+docker run -d \
+  --restart unless-stopped \
+  --name code-server \
+  -p ${PORT}:8080 \
+  -v ~/.config/code-server:/home/coder/.config/code-server \
+  -v "$HOME:/home/coder/project" \
+  codercom/code-server:latest
 
 echo ""
 echo "✅ 安裝完成！"
-echo "🔗 請在瀏覽器打開：http://<你的外部 IP>:8081"
+echo "🔗 請在瀏覽器打開：http://<你的外部 IP>:${PORT}"
 echo "🔑 登入密碼是：$PASSWORD"
 echo ""
-echo "📦 若尚未開放 8081，請到 GCP 防火牆新增規則（TCP:8081）"
+echo "📦 若尚未開放 ${PORT}，請到 GCP 防火牆新增規則（TCP:${PORT}）"
